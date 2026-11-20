@@ -1,0 +1,444 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ツcore — Discord Mic Enhancer</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      min-height: 100vh;
+      background: #0d1117;
+      color: #e6edf3;
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .container {
+      text-align: center;
+      padding: 40px 24px;
+      max-width: 480px;
+      width: 100%;
+    }
+
+    .logo {
+      font-size: 64px;
+      margin-bottom: 8px;
+      animation: pulse 3s ease-in-out infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.7; }
+    }
+
+    h1 {
+      font-size: 2.2rem;
+      font-weight: 700;
+      background: linear-gradient(135deg, #5865f2, #57f287);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      margin-bottom: 8px;
+    }
+
+    .version {
+      color: #8b949e;
+      font-size: 0.9rem;
+      margin-bottom: 32px;
+    }
+
+    .status-box {
+      background: #161b22;
+      border: 1px solid #30363d;
+      border-radius: 16px;
+      padding: 32px 24px;
+      margin-bottom: 28px;
+    }
+
+    .status-label {
+      font-size: 0.85rem;
+      color: #8b949e;
+      margin-bottom: 10px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    .status-indicator {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      font-size: 1.1rem;
+      font-weight: 600;
+    }
+
+    .dot {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      background: #8b949e;
+      transition: all 0.4s ease;
+    }
+
+    .dot.active {
+      background: #57f287;
+      box-shadow: 0 0 10px #57f28780;
+      animation: blink 1.5s ease-in-out infinite;
+    }
+
+    .dot.inactive {
+      background: #f85149;
+    }
+
+    @keyframes blink {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.5; }
+    }
+
+    .btn-row {
+      display: flex;
+      gap: 14px;
+      justify-content: center;
+      margin-bottom: 28px;
+    }
+
+    .btn {
+      flex: 1;
+      max-width: 180px;
+      padding: 16px 24px;
+      border-radius: 12px;
+      border: none;
+      font-size: 1.05rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .btn-on {
+      background: linear-gradient(135deg, #5865f2, #4752c4);
+      color: #fff;
+    }
+
+    .btn-on:hover { transform: translateY(-2px); box-shadow: 0 6px 20px #5865f240; }
+
+    .btn-off {
+      background: #21262d;
+      color: #f85149;
+      border: 1px solid #f8514940;
+    }
+
+    .btn-off:hover { background: #f8514915; transform: translateY(-2px); }
+
+    .btn:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+      transform: none !important;
+    }
+
+    .mic-section {
+      background: #161b22;
+      border: 1px solid #30363d;
+      border-radius: 16px;
+      padding: 24px;
+      margin-bottom: 24px;
+      display: none;
+    }
+
+    .mic-section.visible { display: block; }
+
+    .mic-section h3 {
+      font-size: 0.9rem;
+      color: #8b949e;
+      margin-bottom: 16px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    .mic-controls {
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    .slider-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .slider-label {
+      font-size: 0.85rem;
+      color: #c9d1d9;
+      min-width: 80px;
+      text-align: right;
+    }
+
+    input[type="range"] {
+      flex: 1;
+      -webkit-appearance: none;
+      height: 6px;
+      border-radius: 3px;
+      background: #30363d;
+      outline: none;
+    }
+
+    input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      background: #5865f2;
+      cursor: pointer;
+      box-shadow: 0 0 6px #5865f260;
+    }
+
+    .slider-val {
+      font-size: 0.8rem;
+      color: #57f287;
+      min-width: 36px;
+    }
+
+    .mic-btn {
+      padding: 10px 20px;
+      border-radius: 8px;
+      border: none;
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 0.9rem;
+      transition: all 0.2s;
+    }
+
+    .mic-mute {
+      background: #f8514920;
+      color: #f85149;
+      border: 1px solid #f8514940;
+    }
+
+    .mic-mute.muted {
+      background: #f85149;
+      color: #fff;
+    }
+
+    .mic-mute:hover { opacity: 0.85; }
+
+    .meter-wrap {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .meter-label {
+      font-size: 0.85rem;
+      color: #c9d1d9;
+      min-width: 80px;
+      text-align: right;
+    }
+
+    .meter {
+      flex: 1;
+      height: 10px;
+      background: #21262d;
+      border-radius: 5px;
+      overflow: hidden;
+    }
+
+    .meter-bar {
+      height: 100%;
+      width: 0%;
+      border-radius: 5px;
+      background: linear-gradient(90deg, #57f287, #5865f2);
+      transition: width 0.1s ease;
+    }
+
+    .info-box {
+      background: #161b22;
+      border: 1px solid #30363d;
+      border-radius: 12px;
+      padding: 16px 20px;
+      font-size: 0.85rem;
+      color: #8b949e;
+      line-height: 1.6;
+    }
+
+    .info-box a {
+      color: #5865f2;
+      text-decoration: none;
+    }
+
+    .info-box a:hover { text-decoration: underline; }
+
+    .steps {
+      text-align: right;
+      margin: 10px 0;
+      padding: 0 8px;
+    }
+
+    .steps li {
+      margin-bottom: 6px;
+      list-style: none;
+      padding-right: 20px;
+      position: relative;
+    }
+
+    .steps li::before {
+      content: attr(data-n);
+      position: absolute;
+      right: 0;
+      color: #5865f2;
+      font-weight: 700;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="logo">ツ</div>
+    <h1>ツcore</h1>
+    <p class="version">v3.17.0 — Discord Mic Enhancer</p>
+
+    <div class="status-box">
+      <div class="status-label">حالة الإضافة</div>
+      <div class="status-indicator">
+        <span id="statusText">متوقف</span>
+        <span class="dot inactive" id="dot"></span>
+      </div>
+    </div>
+
+    <div class="btn-row">
+      <button class="btn btn-on" id="btnOn" onclick="startExtension()">▶ تشغيل</button>
+      <button class="btn btn-off" id="btnOff" onclick="stopExtension()" disabled>■ إيقاف</button>
+    </div>
+
+    <!-- تحكم بالمايك — يظهر بعد الضغط تشغيل -->
+    <div class="mic-section" id="micSection">
+      <h3>🎙 تحكم بالمايك</h3>
+      <div class="mic-controls">
+
+        <div class="meter-wrap">
+          <span class="meter-label">مستوى الصوت</span>
+          <div class="meter"><div class="meter-bar" id="meterBar"></div></div>
+        </div>
+
+        <div class="slider-row">
+          <span class="slider-label">الكسب</span>
+          <input type="range" id="gainSlider" min="1" max="10" step="0.1" value="1"
+                 oninput="updateGain(this.value)">
+          <span class="slider-val" id="gainVal">1x</span>
+        </div>
+
+        <div class="slider-row">
+          <span class="slider-label">تخفيف الضوضاء</span>
+          <input type="range" id="noiseSlider" min="0" max="100" value="50"
+                 oninput="document.getElementById('noiseVal').textContent=this.value+'%'">
+          <span class="slider-val" id="noiseVal">50%</span>
+        </div>
+
+        <button class="mic-btn mic-mute" id="muteBtn" onclick="toggleMute()">
+          🎙 كتم المايك
+        </button>
+
+      </div>
+    </div>
+
+    <div class="info-box">
+      <strong style="color:#c9d1d9;">طريقة التثبيت على Chrome/Edge:</strong>
+      <ol class="steps">
+        <li data-n="١">افتح <a href="chrome://extensions" target="_blank">chrome://extensions</a></li>
+        <li data-n="٢">فعّل "وضع المطور" (Developer mode)</li>
+        <li data-n="٣">اضغط "تحميل غير مضغوط" ثم اختر مجلد الإضافة</li>
+        <li data-n="٤">افتح Discord وانضم لقناة صوتية</li>
+        <li data-n="٥">فعّل MIC ONLY قبل الانضمام أو بعده مباشرة</li>
+      </ol>
+    </div>
+
+  </div>
+
+  <script>
+    let running = false;
+    let audioCtx = null;
+    let stream = null;
+    let source = null;
+    let gainNode = null;
+    let analyser = null;
+    let muted = false;
+    let animFrame = null;
+
+    async function startExtension() {
+      try {
+        stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
+        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        source = audioCtx.createMediaStreamSource(stream);
+        gainNode = audioCtx.createGain();
+        analyser = audioCtx.createAnalyser();
+        analyser.fftSize = 256;
+        source.connect(gainNode);
+        gainNode.connect(analyser);
+        // لا نوصل للـ destination حتى لا يصدر صوت محلي
+        running = true;
+        setStatus(true);
+        document.getElementById('micSection').classList.add('visible');
+        drawMeter();
+      } catch(e) {
+        alert('تعذّر الوصول للمايك: ' + e.message);
+      }
+    }
+
+    function stopExtension() {
+      if (stream) stream.getTracks().forEach(t => t.stop());
+      if (audioCtx) audioCtx.close();
+      if (animFrame) cancelAnimationFrame(animFrame);
+      stream = null; audioCtx = null; source = null; gainNode = null; analyser = null;
+      running = false;
+      muted = false;
+      document.getElementById('muteBtn').classList.remove('muted');
+      document.getElementById('muteBtn').textContent = '🎙 كتم المايك';
+      document.getElementById('meterBar').style.width = '0%';
+      document.getElementById('micSection').classList.remove('visible');
+      setStatus(false);
+    }
+
+    function setStatus(on) {
+      const dot = document.getElementById('dot');
+      const txt = document.getElementById('statusText');
+      const btnOn = document.getElementById('btnOn');
+      const btnOff = document.getElementById('btnOff');
+      dot.className = 'dot ' + (on ? 'active' : 'inactive');
+      txt.textContent = on ? 'يعمل' : 'متوقف';
+      btnOn.disabled = on;
+      btnOff.disabled = !on;
+    }
+
+    function updateGain(val) {
+      document.getElementById('gainVal').textContent = parseFloat(val).toFixed(1) + 'x';
+      if (gainNode) gainNode.gain.setTargetAtTime(parseFloat(val), audioCtx.currentTime, 0.01);
+    }
+
+    function toggleMute() {
+      muted = !muted;
+      const btn = document.getElementById('muteBtn');
+      if (muted) {
+        if (stream) stream.getAudioTracks().forEach(t => t.enabled = false);
+        btn.classList.add('muted');
+        btn.textContent = '🔇 المايك مكتوم';
+      } else {
+        if (stream) stream.getAudioTracks().forEach(t => t.enabled = true);
+        btn.classList.remove('muted');
+        btn.textContent = '🎙 كتم المايك';
+      }
+    }
+
+    function drawMeter() {
+      if (!analyser) return;
+      const data = new Uint8Array(analyser.frequencyBinCount);
+      analyser.getByteFrequencyData(data);
+      const avg = data.reduce((a, b) => a + b, 0) / data.length;
+      document.getElementById('meterBar').style.width = Math.min(100, avg * 2) + '%';
+      animFrame = requestAnimationFrame(drawMeter);
+    }
+  </script>
+</body>
+</html>
